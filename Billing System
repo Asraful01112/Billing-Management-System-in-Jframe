@@ -1,0 +1,263 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+
+public class BillingSystemWithLogin {
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            new LoginForm().setVisible(true);
+        });
+    }
+}
+
+class LoginForm extends JFrame {
+    private JTextField txtUsername;
+    private JPasswordField txtPassword;
+    private final JButton btnLogin;
+    private final JButton btnCancel;
+
+    public LoginForm() {
+        setTitle("System Login");
+        setSize(400, 250);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null); 
+        setResizable(false);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel lblTitle = new JLabel("Staff Login Only", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        panel.add(lblTitle, gbc);
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        panel.add(new JLabel("Username:"), gbc);
+
+        txtUsername = new JTextField(15);
+        gbc.gridx = 1;
+        panel.add(txtUsername, gbc);
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        panel.add(new JLabel("Password:"), gbc);
+
+        txtPassword = new JPasswordField(15);
+        gbc.gridx = 1;
+        panel.add(txtPassword, gbc);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        btnLogin = new JButton("Login");
+        btnCancel = new JButton("Cancel");
+        btnPanel.add(btnCancel);
+        btnPanel.add(btnLogin);
+
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        panel.add(btnPanel, gbc);
+
+        add(panel);
+        btnLogin.addActionListener((ActionEvent e) -> {
+            String username = txtUsername.getText().trim();
+            String password = new String(txtPassword.getPassword());
+            
+            if (username.equals("admin") && password.equals("1234")) {
+                JOptionPane.showMessageDialog(LoginForm.this, "Login Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+                new BillingSystemForm().setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(LoginForm.this, "Invalid Username or Password!", "Login Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnCancel.addActionListener((ActionEvent e) -> {
+            System.exit(0);
+        });
+    }
+}
+
+class BillingSystemForm extends JFrame {
+    private JComboBox<String> cmbItems;
+    private final JTextField txtPrice;
+    private final JTextField txtQuantity;
+    private final JTextField txtSubTotal;
+    private final JTextField txtTax;
+    private JTextField txtTotal;
+    private final JCheckBox chkDiscount;
+    private final JTable itemTable;
+    private DefaultTableModel tableModel;
+    private final JButton btnAdd;
+    private final JButton btnClear;
+    private final JButton btnPrint;
+
+    private double subTotal = 0.0;
+    private final double TAX_RATE = 0.15; 
+    private final double DISCOUNT_RATE = 0.10; 
+
+    private final String[] itemList = {"-- Select Item --", "Laptop", "Mouse", "Keyboard", "Mobile", "Headphone", "Monitor", "Ram", "Motherboard"};
+    private final double[] priceList =       {0.0,           20000.0,  800.0,    2000.0,    35000.0,   900.0,       15000.0,  4500.0, 8000.0};
+
+    public BillingSystemForm() {
+        setTitle("Billing Management System");
+        setSize(850, 550);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
+        JPanel pnlInput = new JPanel(new GridLayout(2, 4, 10, 10));
+        pnlInput.setBorder(BorderFactory.createTitledBorder("Item Entry Panel"));
+
+        pnlInput.add(new JLabel("Select Item:"));
+        cmbItems = new JComboBox<>(itemList);
+        pnlInput.add(cmbItems);
+
+        pnlInput.add(new JLabel("Price ($):"));
+        txtPrice = new JTextField();
+        pnlInput.add(txtPrice);
+
+        pnlInput.add(new JLabel("Quantity:"));
+        txtQuantity = new JTextField();
+        pnlInput.add(txtQuantity);
+
+        pnlInput.add(new JLabel("")); 
+        btnAdd = new JButton("Add To Cart");
+        pnlInput.add(btnAdd);
+
+        add(pnlInput, BorderLayout.NORTH);
+    
+        String[] columns = {"Product Name", "Unit Price", "Qty", "Total Price"};
+        tableModel = new DefaultTableModel(columns, 0);
+        itemTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(itemTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Cart / Product List"));
+        add(scrollPane, BorderLayout.CENTER);
+        JPanel pnlSummary = new JPanel(new GridLayout(6, 2, 5, 15));
+        pnlSummary.setBorder(BorderFactory.createTitledBorder("Billing Summary"));
+        pnlSummary.setPreferredSize(new Dimension(280, 0));
+
+        pnlSummary.add(new JLabel("Subtotal:"));
+        txtSubTotal = new JTextField("0.00");
+        txtSubTotal.setEditable(false);
+        pnlSummary.add(txtSubTotal);
+
+        pnlSummary.add(new JLabel("Tax (15% VAT):"));
+        txtTax = new JTextField("0.00");
+        txtTax.setEditable(false);
+        pnlSummary.add(txtTax);
+
+        pnlSummary.add(new JLabel("Apply 10% Discount:"));
+        chkDiscount = new JCheckBox();
+        pnlSummary.add(chkDiscount);
+
+        pnlSummary.add(new JLabel("Grand Total:"));
+        txtTotal = new JTextField("0.00");
+        txtTotal.setEditable(false);
+        txtTotal.setFont(new Font("Arial", Font.BOLD, 14));
+        pnlSummary.add(txtTotal);
+
+        btnClear = new JButton("Clear Cart");
+        pnlSummary.add(btnClear);
+
+        btnPrint = new JButton("Print Receipt");
+        pnlSummary.add(btnPrint);
+
+        add(pnlSummary, BorderLayout.EAST);
+
+        cmbItems.addItemListener((ItemEvent e) -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                int selectedIndex = cmbItems.getSelectedIndex();
+                if (selectedIndex > 0) {
+                    txtPrice.setText(String.valueOf(priceList[selectedIndex]));
+                } else {
+                    txtPrice.setText("");
+                }
+            }
+        });
+
+        btnAdd.addActionListener((ActionEvent e) -> {
+            addItemToCart();
+        });
+
+        chkDiscount.addActionListener((ActionEvent e) -> {
+            updateTotals();
+        });
+
+        btnClear.addActionListener((ActionEvent e) -> {
+            clearAll();
+        });
+
+        btnPrint.addActionListener((ActionEvent e) -> {
+            if (tableModel.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(BillingSystemForm.this, "Your cart is empty!", "Empty Cart", JOptionPane.WARNING_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(BillingSystemForm.this, "Receipt Processed Successfully!\nTotal Paid Amount: $" + txtTotal.getText(), "Print Success", JOptionPane.INFORMATION_MESSAGE);
+                clearAll();
+            }
+        });
+    }
+
+    private void addItemToCart() {
+        try {
+            int selectedIndex = cmbItems.getSelectedIndex();
+            if (selectedIndex <= 0) {
+                JOptionPane.showMessageDialog(this, "Please select an item from the list.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String itemName = (String) cmbItems.getSelectedItem();
+            double price = Double.parseDouble(txtPrice.getText().trim());
+            int qty = Integer.parseInt(txtQuantity.getText().trim());
+
+            if (price <= 0 || qty <= 0) {
+                JOptionPane.showMessageDialog(this, "Price and Quantity must be greater than zero.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            double itemTotal = price * qty;
+
+            tableModel.addRow(new Object[]{itemName, String.format("%.2f", price), qty, String.format("%.2f", itemTotal)});
+
+            subTotal += itemTotal;
+            updateTotals();
+
+            cmbItems.setSelectedIndex(0);
+            txtPrice.setText("");
+            txtQuantity.setText("");
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter valid numeric values for Price and Quantity.", "Input Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void updateTotals() {
+        double tax = subTotal * TAX_RATE;
+        double discount = chkDiscount.isSelected() ? (subTotal * DISCOUNT_RATE) : 0.0;
+        double grandTotal = (subTotal + tax) - discount;
+
+        txtSubTotal.setText(String.format("%.2f", subTotal));
+        txtTax.setText(String.format("%.2f", tax));
+        txtTotal.setText(String.format("%.2f", grandTotal));
+    }
+
+    private void clearAll() {
+        tableModel.setRowCount(0);
+        subTotal = 0.0;
+        chkDiscount.setSelected(false);
+        updateTotals();
+        cmbItems.setSelectedIndex(0);
+        txtPrice.setText("");
+        txtQuantity.setText("");
+    }
+}
