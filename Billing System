@@ -12,7 +12,8 @@ public class BillingSystemWithLogin {
         }
 
         SwingUtilities.invokeLater(() -> {
-            new LoginForm().setVisible(true);
+            LoginForm login = new LoginForm();
+            login.setVisible(true); 
         });
     }
 }
@@ -27,7 +28,7 @@ class LoginForm extends JFrame {
         setTitle("System Login");
         setSize(400, 250);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); 
+        setLocationRelativeTo(null);
         setResizable(false);
 
         JPanel panel = new JPanel(new GridBagLayout());
@@ -70,14 +71,17 @@ class LoginForm extends JFrame {
         panel.add(btnPanel, gbc);
 
         add(panel);
+
         btnLogin.addActionListener((ActionEvent e) -> {
             String username = txtUsername.getText().trim();
             String password = new String(txtPassword.getPassword());
             
-            if (username.equals("admin") && password.equals("1234")) {
+            if (username.equals("Asraful") && password.equals("01112")) {
                 JOptionPane.showMessageDialog(LoginForm.this, "Login Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-                new BillingSystemForm().setVisible(true);
+                
+                BillingSystemForm billingForm = new BillingSystemForm();
+                billingForm.setVisible(true); 
             } else {
                 JOptionPane.showMessageDialog(LoginForm.this, "Invalid Username or Password!", "Login Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -116,6 +120,7 @@ class BillingSystemForm extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
+
         JPanel pnlInput = new JPanel(new GridLayout(2, 4, 10, 10));
         pnlInput.setBorder(BorderFactory.createTitledBorder("Item Entry Panel"));
 
@@ -143,6 +148,7 @@ class BillingSystemForm extends JFrame {
         JScrollPane scrollPane = new JScrollPane(itemTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Cart / Product List"));
         add(scrollPane, BorderLayout.CENTER);
+
         JPanel pnlSummary = new JPanel(new GridLayout(6, 2, 5, 15));
         pnlSummary.setBorder(BorderFactory.createTitledBorder("Billing Summary"));
         pnlSummary.setPreferredSize(new Dimension(280, 0));
@@ -202,7 +208,49 @@ class BillingSystemForm extends JFrame {
             if (tableModel.getRowCount() == 0) {
                 JOptionPane.showMessageDialog(BillingSystemForm.this, "Your cart is empty!", "Empty Cart", JOptionPane.WARNING_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(BillingSystemForm.this, "Receipt Processed Successfully!\nTotal Paid Amount: $" + txtTotal.getText(), "Print Success", JOptionPane.INFORMATION_MESSAGE);
+                StringBuilder receipt = new StringBuilder();
+                receipt.append("=========================================\n");
+                receipt.append("              * RECEIPT *                \n");
+                receipt.append("=========================================\n");
+                receipt.append(String.format("%-20s %-10s %-5s %-10s\n", "Product", "Price", "Qty", "Total"));
+                receipt.append("-----------------------------------------\n");
+
+                for (int i = 0; i < tableModel.getRowCount(); i++) {
+                    String name = tableModel.getValueAt(i, 0).toString();
+                    String price = tableModel.getValueAt(i, 1).toString();
+                    String qty = tableModel.getValueAt(i, 2).toString();
+                    String total = tableModel.getValueAt(i, 3).toString();
+
+                    if (name.length() > 18) {
+                        name = name.substring(0, 15) + "...";
+                    }
+                    receipt.append(String.format("%-20s %-10s %-5s %-10s\n", name, price, qty, total));
+                }
+
+                receipt.append("-----------------------------------------\n");
+                receipt.append(String.format("%-25s $%10s\n", "Subtotal:", txtSubTotal.getText()));
+                receipt.append(String.format("%-25s $%10s\n", "Tax (15% VAT):", txtTax.getText()));
+                if (chkDiscount.isSelected()) {
+                    receipt.append(String.format("%-25s %11s\n", "Discount applied:", "10% Off"));
+                }
+                receipt.append("=========================================\n");
+                receipt.append(String.format("GRAND TOTAL:                   $%10s\n", txtTotal.getText()));
+                receipt.append("=========================================\n");
+                receipt.append("          Thank you for shopping!        \n");
+
+                JTextArea txtReceipt = new JTextArea(receipt.toString());
+                txtReceipt.setFont(new Font("Monospaced", Font.PLAIN, 12));
+                txtReceipt.setEditable(false);
+                JScrollPane scrollPaneReceipt = new JScrollPane(txtReceipt);
+                scrollPaneReceipt.setPreferredSize(new Dimension(350, 450));
+
+                JOptionPane.showMessageDialog(
+                    BillingSystemForm.this, 
+                    scrollPaneReceipt, 
+                    "Printed Receipt / Invoice", 
+                    JOptionPane.PLAIN_MESSAGE
+                );
+
                 clearAll();
             }
         });
