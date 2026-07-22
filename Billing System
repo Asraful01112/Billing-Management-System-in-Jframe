@@ -629,7 +629,7 @@ class BillingSystemForm extends JFrame {
 
         if (option == JOptionPane.OK_OPTION) {
             String enteredPassword = new String(pf.getPassword());
-            User adminUser = LoginForm.userDatabase.get("admin");
+            User adminUser = LoginForm.userDatabase.get("Asraful");
             if (adminUser != null && adminUser.password.equals(enteredPassword)) {
                 return true;
             } else {
