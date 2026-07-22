@@ -1,10 +1,22 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
+import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import javax.imageio.ImageIO;
 
 public class BillingSystemWithLogin {
+    public static final String BG_IMAGE_URL = "https://images.unsplash.com/photo-1556742049-0a67dd35a29f?q=80&w=1000&auto=format&fit=crop";
+
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -18,78 +30,236 @@ public class BillingSystemWithLogin {
     }
 }
 
+class BackgroundPanel extends JPanel {
+    private BufferedImage backgroundImage;
+
+    public BackgroundPanel(String imageUrl) {
+        try {
+            URL url = new URL(imageUrl);
+            BufferedImage originalImage = ImageIO.read(url);
+            if (originalImage != null) {
+                this.backgroundImage = blurImage(originalImage);
+            }
+        } catch (IOException e) {
+            System.out.println("Image loading failed: " + e.getMessage());
+        }
+    }
+
+    private BufferedImage blurImage(BufferedImage img) {
+        int radius = 11;
+        int size = radius * 2 + 1;
+        float[] matrix = new float[size * size];
+        for (int i = 0; i < matrix.length; i++) {
+            matrix[i] = 1.0f / (size * size);
+        }
+        Kernel kernel = new Kernel(size, size, matrix);
+        ConvolveOp op = new ConvolveOp(kernel, ConvolveOp.EDGE_NO_OP, null);
+        return op.filter(img, null);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g.create();
+        
+        if (backgroundImage != null) {
+            g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+        } else {
+            g2d.setColor(new Color(15, 23, 42));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+
+        g2d.setColor(new Color(10, 15, 30, 160)); 
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
+        g2d.dispose();
+    }
+}
+
+class User {
+    String password;
+    String role;
+
+    public User(String password, String role) {
+        this.password = password;
+        this.role = role;
+    }
+}
+
+class Product {
+    String name;
+    double price;
+    int stock;
+
+    public Product(String name, double price, int stock) {
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+}
+
 class LoginForm extends JFrame {
     private JTextField txtUsername;
     private JPasswordField txtPassword;
     private final JButton btnLogin;
+    private final JButton btnRegister;
     private final JButton btnCancel;
 
+    public static final Map<String, User> userDatabase = new HashMap<>();
+    
+    static {
+        userDatabase.put("Asraful", new User("01112", "ADMIN"));
+        userDatabase.put("Tasnim", new User("tasnim123", "STAFF"));
+        userDatabase.put("Tanjima", new User("tanjima123", "STAFF"));
+    }
+
     public LoginForm() {
-        setTitle("System Login");
-        setSize(400, 250);
+        setTitle("System Access Panel");
+        setSize(460, 340);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        BackgroundPanel mainPanel = new BackgroundPanel(BillingSystemWithLogin.BG_IMAGE_URL);
+        mainPanel.setLayout(new GridBagLayout());
+
+        JPanel cardPanel = new JPanel(new GridBagLayout());
+        cardPanel.setBackground(new Color(255, 255, 255, 30)); 
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel lblTitle = new JLabel("Staff Login Only", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        panel.add(lblTitle, gbc);
-        gbc.gridwidth = 1;
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        panel.add(new JLabel("Username:"), gbc);
+        JLabel lblTitle = new JLabel("POS System Login", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(new Color(0, 210, 255));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        cardPanel.add(lblTitle, gbc);
+
+        Font labelFont = new Font("Segoe UI", Font.BOLD, 14);
+
+        gbc.gridwidth = 1; gbc.gridy = 1; gbc.gridx = 0;
+        JLabel lblUser = new JLabel("Username:");
+        lblUser.setFont(labelFont);
+        lblUser.setForeground(Color.WHITE);
+        cardPanel.add(lblUser, gbc);
 
         txtUsername = new JTextField(15);
+        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         gbc.gridx = 1;
-        panel.add(txtUsername, gbc);
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        panel.add(new JLabel("Password:"), gbc);
+        cardPanel.add(txtUsername, gbc);
+
+        gbc.gridy = 2; gbc.gridx = 0;
+        JLabel lblPass = new JLabel("Password:");
+        lblPass.setFont(labelFont);
+        lblPass.setForeground(Color.WHITE);
+        cardPanel.add(lblPass, gbc);
 
         txtPassword = new JPasswordField(15);
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         gbc.gridx = 1;
-        panel.add(txtPassword, gbc);
+        cardPanel.add(txtPassword, gbc);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnPanel.setOpaque(false);
         btnLogin = new JButton("Login");
+        btnRegister = new JButton("Register");
         btnCancel = new JButton("Cancel");
-        btnPanel.add(btnCancel);
+
+        Font btnFont = new Font("Segoe UI", Font.BOLD, 13);
+        btnLogin.setFont(btnFont);
+        btnRegister.setFont(btnFont);
+        btnCancel.setFont(btnFont);
+
+        btnLogin.setBackground(new Color(46, 204, 113));
+        btnLogin.setForeground(Color.WHITE);
+        btnRegister.setBackground(new Color(52, 152, 219));
+        btnRegister.setForeground(Color.WHITE);
+
+        btnPanel.add(btnRegister);
         btnPanel.add(btnLogin);
+        btnPanel.add(btnCancel);
 
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        panel.add(btnPanel, gbc);
+        gbc.gridy = 3; gbc.gridx = 0; gbc.gridwidth = 2;
+        cardPanel.add(btnPanel, gbc);
 
-        add(panel);
+        mainPanel.add(cardPanel);
+        add(mainPanel);
 
         btnLogin.addActionListener((ActionEvent e) -> {
             String username = txtUsername.getText().trim();
             String password = new String(txtPassword.getPassword());
-            
-            if (username.equals("Asraful") && password.equals("01112")) {
-                JOptionPane.showMessageDialog(LoginForm.this, "Login Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            if (userDatabase.containsKey(username) && userDatabase.get(username).password.equals(password)) {
+                User loggedUser = userDatabase.get(username);
+                JOptionPane.showMessageDialog(LoginForm.this, "Login Successful (" + loggedUser.role + ")!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
                 
-                BillingSystemForm billingForm = new BillingSystemForm();
+                BillingSystemForm billingForm = new BillingSystemForm(username, loggedUser.role);
                 billingForm.setVisible(true); 
             } else {
                 JOptionPane.showMessageDialog(LoginForm.this, "Invalid Username or Password!", "Login Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        btnCancel.addActionListener((ActionEvent e) -> {
-            System.exit(0);
-        });
+        btnRegister.addActionListener((ActionEvent e) -> openRegistrationDialog());
+        btnCancel.addActionListener((ActionEvent e) -> System.exit(0));
+    }
+
+    private void openRegistrationDialog() {
+        if (userDatabase.size() >= 3) {
+            JOptionPane.showMessageDialog(this, 
+                "User limit reached! (Maximum 3 users: 1 Admin + 2 Staff allowed).\nRemove an existing user to add a new one.", 
+                "Limit Reached", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JTextField regUser = new JTextField();
+        JPasswordField regPass = new JPasswordField();
+        JComboBox<String> cmbRole = new JComboBox<>(new String[]{"STAFF", "ADMIN"});
+        
+        Object[] message = {
+            "New Username:", regUser,
+            "New Password:", regPass,
+            "User Role:", cmbRole
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message, "Register New User", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String u = regUser.getText().trim();
+            String p = new String(regPass.getPassword());
+            String role = (String) cmbRole.getSelectedItem();
+
+            if (u.isEmpty() || p.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Fields cannot be empty!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            } 
+            
+            if (userDatabase.containsKey(u)) {
+                JOptionPane.showMessageDialog(this, "Username already exists!", "Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            long adminCount = userDatabase.values().stream().filter(usr -> "ADMIN".equalsIgnoreCase(usr.role)).count();
+            long staffCount = userDatabase.values().stream().filter(usr -> "STAFF".equalsIgnoreCase(usr.role)).count();
+
+            if ("ADMIN".equalsIgnoreCase(role) && adminCount >= 1) {
+                JOptionPane.showMessageDialog(this, "Admin limit reached! Only 1 Admin account is allowed.", "Role Limit", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if ("STAFF".equalsIgnoreCase(role) && staffCount >= 2) {
+                JOptionPane.showMessageDialog(this, "Staff limit reached! Only 2 Staff accounts are allowed.", "Role Limit", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            userDatabase.put(u, new User(p, role));
+            JOptionPane.showMessageDialog(this, "User Registered Successfully as " + role + "!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 }
 
@@ -101,107 +271,234 @@ class BillingSystemForm extends JFrame {
     private final JTextField txtTax;
     private JTextField txtTotal;
     private final JCheckBox chkDiscount;
+    private final JTextArea txtComment;
     private final JTable itemTable;
     private DefaultTableModel tableModel;
     private final JButton btnAdd;
-    private final JButton btnClear;
+    private final JButton btnDeleteSelectedItem; 
+    private final JButton btnClearAll;           
     private final JButton btnPrint;
+    private JButton btnAdminEdit;
+    private JButton btnManageUsers;
 
     private double subTotal = 0.0;
     private final double TAX_RATE = 0.15; 
     private final double DISCOUNT_RATE = 0.10; 
 
-    private final String[] itemList = {"-- Select Item --", "Laptop", "Mouse", "Keyboard", "Mobile", "Headphone", "Monitor", "Ram", "Motherboard"};
-    private final double[] priceList =       {0.0,           20000.0,  800.0,    2000.0,    35000.0,   900.0,       15000.0,  4500.0, 8000.0};
+    private final java.util.List<Product> inventory = new ArrayList<>();
+    private final String userRole;
 
-    public BillingSystemForm() {
-        setTitle("Billing Management System");
-        setSize(850, 550);
+    public BillingSystemForm(String currentStaff, String role) {
+        this.userRole = role;
+
+        inventory.add(new Product("Laptop", 20000.0, 5));
+        inventory.add(new Product("Mouse", 800.0, 15));
+        inventory.add(new Product("Keyboard", 2000.0, 10));
+        inventory.add(new Product("Mobile", 35000.0, 8));
+        inventory.add(new Product("Headphone", 900.0, 0));
+        inventory.add(new Product("Monitor", 15000.0, 4));
+        inventory.add(new Product("Ram", 4500.0, 20));
+        inventory.add(new Product("Motherboard", 8000.0, 3));
+
+        setTitle("Billing Management System - User: " + currentStaff + " (" + userRole + ")");
+        setSize(1050, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
 
-        JPanel pnlInput = new JPanel(new GridLayout(2, 4, 10, 10));
-        pnlInput.setBorder(BorderFactory.createTitledBorder("Item Entry Panel"));
+        BackgroundPanel mainPanel = new BackgroundPanel(BillingSystemWithLogin.BG_IMAGE_URL);
+        mainPanel.setLayout(new BorderLayout(12, 12));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        pnlInput.add(new JLabel("Select Item:"));
-        cmbItems = new JComboBox<>(itemList);
+        Font boldLabelFont = new Font("Segoe UI", Font.BOLD, 14);
+        Color textColor = Color.WHITE;
+        Color accentTitleColor = new Color(0, 210, 255);
+
+        JPanel pnlNorth = new JPanel(new BorderLayout());
+        pnlNorth.setOpaque(false);
+
+        JPanel pnlInput = new JPanel(new GridLayout(2, 4, 12, 12));
+        pnlInput.setBackground(new Color(255, 255, 255, 20)); 
+        pnlInput.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1),
+                " Item Entry Panel ", 0, 0, boldLabelFont, accentTitleColor
+        ));
+
+        JLabel lbl1 = new JLabel("Select Item:"); lbl1.setFont(boldLabelFont); lbl1.setForeground(textColor);
+        pnlInput.add(lbl1);
+        cmbItems = new JComboBox<>();
+        cmbItems.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        populateComboBox();
         pnlInput.add(cmbItems);
 
-        pnlInput.add(new JLabel("Price ($):"));
+        JLabel lbl2 = new JLabel("Price ($):"); lbl2.setFont(boldLabelFont); lbl2.setForeground(textColor);
+        pnlInput.add(lbl2);
         txtPrice = new JTextField();
+        txtPrice.setFont(boldLabelFont);
+        txtPrice.setEditable(false);
         pnlInput.add(txtPrice);
 
-        pnlInput.add(new JLabel("Quantity:"));
+        JLabel lbl3 = new JLabel("Quantity:"); lbl3.setFont(boldLabelFont); lbl3.setForeground(textColor);
+        pnlInput.add(lbl3);
         txtQuantity = new JTextField();
+        txtQuantity.setFont(boldLabelFont);
         pnlInput.add(txtQuantity);
 
         pnlInput.add(new JLabel("")); 
         btnAdd = new JButton("Add To Cart");
+        btnAdd.setFont(boldLabelFont);
+        btnAdd.setBackground(new Color(46, 204, 113));
+        btnAdd.setForeground(Color.WHITE);
         pnlInput.add(btnAdd);
 
-        add(pnlInput, BorderLayout.NORTH);
-    
+        pnlNorth.add(pnlInput, BorderLayout.CENTER);
+
+        if ("ADMIN".equalsIgnoreCase(userRole)) {
+            JPanel pnlAdmin = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            pnlAdmin.setOpaque(false);
+
+            btnManageUsers = new JButton("👥 Manage Users / Staff");
+            btnManageUsers.setFont(boldLabelFont);
+            btnManageUsers.setBackground(new Color(230, 126, 34));
+            btnManageUsers.setForeground(Color.WHITE);
+
+            btnAdminEdit = new JButton("⚙ Manage Inventory");
+            btnAdminEdit.setFont(boldLabelFont);
+            btnAdminEdit.setBackground(new Color(155, 89, 182));
+            btnAdminEdit.setForeground(Color.WHITE);
+
+            pnlAdmin.add(btnManageUsers);
+            pnlAdmin.add(btnAdminEdit);
+            pnlNorth.add(pnlAdmin, BorderLayout.SOUTH);
+
+            btnAdminEdit.addActionListener((ActionEvent e) -> openAdminInventoryManager());
+            btnManageUsers.addActionListener((ActionEvent e) -> openStaffManagementDialog(currentStaff));
+        }
+
+        mainPanel.add(pnlNorth, BorderLayout.NORTH);
+
         String[] columns = {"Product Name", "Unit Price", "Qty", "Total Price"};
         tableModel = new DefaultTableModel(columns, 0);
         itemTable = new JTable(tableModel);
+        itemTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        itemTable.setRowHeight(28);
+        itemTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        itemTable.getTableHeader().setBackground(new Color(30, 41, 59));
+        itemTable.getTableHeader().setForeground(Color.WHITE);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        itemTable.setDefaultRenderer(Object.class, centerRenderer);
+
         JScrollPane scrollPane = new JScrollPane(itemTable);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Cart / Product List"));
-        add(scrollPane, BorderLayout.CENTER);
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1),
+                " Cart / Product List ", 0, 0, boldLabelFont, accentTitleColor
+        ));
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel pnlSummary = new JPanel(new GridLayout(6, 2, 5, 15));
-        pnlSummary.setBorder(BorderFactory.createTitledBorder("Billing Summary"));
-        pnlSummary.setPreferredSize(new Dimension(280, 0));
+        // --- Right Billing Summary Panel ---
+        JPanel pnlSummary = new JPanel(new GridLayout(9, 2, 8, 8));
+        pnlSummary.setBackground(new Color(255, 255, 255, 20));
+        pnlSummary.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1),
+                " Billing & Summary ", 0, 0, boldLabelFont, accentTitleColor
+        ));
+        pnlSummary.setPreferredSize(new Dimension(360, 0));
 
-        pnlSummary.add(new JLabel("Subtotal:"));
+        JLabel sLbl1 = new JLabel("Subtotal:"); sLbl1.setFont(boldLabelFont); sLbl1.setForeground(textColor);
+        pnlSummary.add(sLbl1);
         txtSubTotal = new JTextField("0.00");
+        txtSubTotal.setFont(boldLabelFont);
         txtSubTotal.setEditable(false);
         pnlSummary.add(txtSubTotal);
 
-        pnlSummary.add(new JLabel("Tax (15% VAT):"));
+        JLabel sLbl2 = new JLabel("Tax (15% VAT):"); sLbl2.setFont(boldLabelFont); sLbl2.setForeground(textColor);
+        pnlSummary.add(sLbl2);
         txtTax = new JTextField("0.00");
+        txtTax.setFont(boldLabelFont);
         txtTax.setEditable(false);
         pnlSummary.add(txtTax);
 
-        pnlSummary.add(new JLabel("Apply 10% Discount:"));
+        JLabel sLbl3 = new JLabel("Apply 10% Discount:"); sLbl3.setFont(boldLabelFont); sLbl3.setForeground(textColor);
+        pnlSummary.add(sLbl3);
         chkDiscount = new JCheckBox();
+        chkDiscount.setOpaque(false);
         pnlSummary.add(chkDiscount);
 
-        pnlSummary.add(new JLabel("Grand Total:"));
+        JLabel sLbl4 = new JLabel("Grand Total:"); sLbl4.setFont(new Font("Segoe UI", Font.BOLD, 16)); sLbl4.setForeground(new Color(255, 107, 107));
+        pnlSummary.add(sLbl4);
         txtTotal = new JTextField("0.00");
         txtTotal.setEditable(false);
-        txtTotal.setFont(new Font("Arial", Font.BOLD, 14));
+        txtTotal.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        txtTotal.setForeground(new Color(192, 57, 43));
         pnlSummary.add(txtTotal);
 
-        btnClear = new JButton("Clear Cart");
-        pnlSummary.add(btnClear);
+        JLabel sLbl5 = new JLabel("Customer Note:"); sLbl5.setFont(boldLabelFont); sLbl5.setForeground(textColor);
+        pnlSummary.add(sLbl5);
+        txtComment = new JTextArea(2, 10);
+        txtComment.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtComment.setLineWrap(true);
+        pnlSummary.add(new JScrollPane(txtComment));
+
+        btnDeleteSelectedItem = new JButton("Delete Selected");
+        btnDeleteSelectedItem.setFont(boldLabelFont);
+        btnDeleteSelectedItem.setBackground(new Color(230, 126, 34));
+        btnDeleteSelectedItem.setForeground(Color.WHITE);
+        pnlSummary.add(btnDeleteSelectedItem);
+
+        btnClearAll = new JButton("Clear All Cart");
+        btnClearAll.setFont(boldLabelFont);
+        btnClearAll.setBackground(new Color(231, 76, 60));
+        btnClearAll.setForeground(Color.WHITE);
+        pnlSummary.add(btnClearAll);
 
         btnPrint = new JButton("Print Receipt");
+        btnPrint.setFont(boldLabelFont);
+        btnPrint.setBackground(new Color(39, 174, 96));
+        btnPrint.setForeground(Color.WHITE);
+        
+        pnlSummary.add(new JLabel("")); 
         pnlSummary.add(btnPrint);
 
-        add(pnlSummary, BorderLayout.EAST);
+        mainPanel.add(pnlSummary, BorderLayout.EAST);
+
+        add(mainPanel);
 
         cmbItems.addItemListener((ItemEvent e) -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 int selectedIndex = cmbItems.getSelectedIndex();
                 if (selectedIndex > 0) {
-                    txtPrice.setText(String.valueOf(priceList[selectedIndex]));
+                    txtPrice.setText(String.valueOf(inventory.get(selectedIndex - 1).price));
                 } else {
                     txtPrice.setText("");
                 }
             }
         });
 
-        btnAdd.addActionListener((ActionEvent e) -> {
-            addItemToCart();
+        btnAdd.addActionListener((ActionEvent e) -> addItemToCart());
+        chkDiscount.addActionListener((ActionEvent e) -> updateTotals());
+
+        btnDeleteSelectedItem.addActionListener((ActionEvent e) -> {
+            int selectedRow = itemTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Please select an item/row from table to delete!", "Selection Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (verifyAdminPassword()) {
+                deleteSelectedCartItem(selectedRow);
+            }
         });
 
-        chkDiscount.addActionListener((ActionEvent e) -> {
-            updateTotals();
-        });
-
-        btnClear.addActionListener((ActionEvent e) -> {
-            clearAll();
+        btnClearAll.addActionListener((ActionEvent e) -> {
+            if (tableModel.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, "Cart is already empty!", "Info", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            if (verifyAdminPassword()) {
+                clearAll();
+                JOptionPane.showMessageDialog(this, "All cart items cleared successfully by Admin!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
         });
 
         btnPrint.addActionListener((ActionEvent e) -> {
@@ -212,7 +509,9 @@ class BillingSystemForm extends JFrame {
                 receipt.append("=========================================\n");
                 receipt.append("              * RECEIPT *                \n");
                 receipt.append("=========================================\n");
-                receipt.append(String.format("%-20s %-10s %-5s %-10s\n", "Product", "Price", "Qty", "Total"));
+                receipt.append("Served By: ").append(currentStaff).append("\n");
+                receipt.append("-----------------------------------------\n");
+                receipt.append(String.format("%-18s %-8s %-4s %-8s\n", "Product", "Price", "Qty", "Total"));
                 receipt.append("-----------------------------------------\n");
 
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -221,28 +520,35 @@ class BillingSystemForm extends JFrame {
                     String qty = tableModel.getValueAt(i, 2).toString();
                     String total = tableModel.getValueAt(i, 3).toString();
 
-                    if (name.length() > 18) {
-                        name = name.substring(0, 15) + "...";
+                    if (name.length() > 15) {
+                        name = name.substring(0, 12) + "...";
                     }
-                    receipt.append(String.format("%-20s %-10s %-5s %-10s\n", name, price, qty, total));
+                    receipt.append(String.format("%-18s %-8s %-4s %-8s\n", name, price, qty, total));
                 }
 
                 receipt.append("-----------------------------------------\n");
-                receipt.append(String.format("%-25s $%10s\n", "Subtotal:", txtSubTotal.getText()));
-                receipt.append(String.format("%-25s $%10s\n", "Tax (15% VAT):", txtTax.getText()));
+                receipt.append(String.format("%-22s $%10s\n", "Subtotal:", txtSubTotal.getText()));
+                receipt.append(String.format("%-22s $%10s\n", "Tax (15% VAT):", txtTax.getText()));
                 if (chkDiscount.isSelected()) {
-                    receipt.append(String.format("%-25s %11s\n", "Discount applied:", "10% Off"));
+                    receipt.append(String.format("%-22s %11s\n", "Discount applied:", "10% Off"));
                 }
                 receipt.append("=========================================\n");
-                receipt.append(String.format("GRAND TOTAL:                   $%10s\n", txtTotal.getText()));
+                receipt.append(String.format("GRAND TOTAL:           $%10s\n", txtTotal.getText()));
                 receipt.append("=========================================\n");
-                receipt.append("          Thank you for shopping!        \n");
+                
+                String commentText = txtComment.getText().trim();
+                if (!commentText.isEmpty()) {
+                    receipt.append("Note: ").append(commentText).append("\n");
+                    receipt.append("-----------------------------------------\n");
+                }
+                
+                receipt.append("          Thank you for shopping!         \n");
 
                 JTextArea txtReceipt = new JTextArea(receipt.toString());
                 txtReceipt.setFont(new Font("Monospaced", Font.PLAIN, 12));
                 txtReceipt.setEditable(false);
                 JScrollPane scrollPaneReceipt = new JScrollPane(txtReceipt);
-                scrollPaneReceipt.setPreferredSize(new Dimension(350, 450));
+                scrollPaneReceipt.setPreferredSize(new Dimension(360, 480));
 
                 JOptionPane.showMessageDialog(
                     BillingSystemForm.this, 
@@ -250,10 +556,165 @@ class BillingSystemForm extends JFrame {
                     "Printed Receipt / Invoice", 
                     JOptionPane.PLAIN_MESSAGE
                 );
-
-                clearAll();
             }
         });
+    }
+
+    private void openStaffManagementDialog(String currentAdminUser) {
+        DefaultListModel<String> userListModel = new DefaultListModel<>();
+        for (Map.Entry<String, User> entry : LoginForm.userDatabase.entrySet()) {
+            userListModel.addElement(entry.getKey() + " [" + entry.getValue().role + "]");
+        }
+
+        JList<String> userJList = new JList<>(userListModel);
+        userJList.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(userJList);
+        scrollPane.setPreferredSize(new Dimension(300, 180));
+
+        Object[] dialogContent = {
+            "Select User/Staff to Remove:",
+            scrollPane
+        };
+
+        int option = JOptionPane.showOptionDialog(
+                this,
+                dialogContent,
+                "Admin Staff Management Panel",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                new String[]{"Remove Selected User", "Close"},
+                "Remove Selected User"
+        );
+
+        if (option == JOptionPane.OK_OPTION) {
+            String selectedValue = userJList.getSelectedValue();
+            if (selectedValue == null) {
+                JOptionPane.showMessageDialog(this, "Please select a user from the list to remove!", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String targetUser = selectedValue.split(" \\[")[0];
+
+            if (targetUser.equals(currentAdminUser)) {
+                JOptionPane.showMessageDialog(this, "You cannot remove your own active Admin account!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this, 
+                    "Are you sure you want to remove user '" + targetUser + "'?", 
+                    "Confirm User Removal", 
+                    JOptionPane.YES_NO_OPTION, 
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                LoginForm.userDatabase.remove(targetUser);
+                JOptionPane.showMessageDialog(this, "User '" + targetUser + "' has been successfully removed!", "User Removed", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+
+    private boolean verifyAdminPassword() {
+        JPasswordField pf = new JPasswordField();
+        int option = JOptionPane.showConfirmDialog(
+                this, 
+                new Object[]{"Enter Admin Password for Approval:", pf}, 
+                "Admin Authorization Required", 
+                JOptionPane.OK_CANCEL_OPTION, 
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (option == JOptionPane.OK_OPTION) {
+            String enteredPassword = new String(pf.getPassword());
+            User adminUser = LoginForm.userDatabase.get("admin");
+            if (adminUser != null && adminUser.password.equals(enteredPassword)) {
+                return true;
+            } else {
+                JOptionPane.showMessageDialog(this, "Incorrect Admin Password! Access Denied.", "Permission Denied", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        return false;
+    }
+
+    private void deleteSelectedCartItem(int selectedRow) {
+        String prodName = tableModel.getValueAt(selectedRow, 0).toString();
+        int qty = Integer.parseInt(tableModel.getValueAt(selectedRow, 2).toString());
+        double itemTotal = Double.parseDouble(tableModel.getValueAt(selectedRow, 3).toString());
+
+        for (Product p : inventory) {
+            if (p.name.equals(prodName)) {
+                p.stock += qty;
+                break;
+            }
+        }
+
+        subTotal -= itemTotal;
+        tableModel.removeRow(selectedRow);
+        
+        updateTotals();
+        populateComboBox();
+        JOptionPane.showMessageDialog(this, prodName + " removed from cart!", "Item Removed", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void populateComboBox() {
+        cmbItems.removeAllItems();
+        cmbItems.addItem("-- Select Item --");
+        for (Product p : inventory) {
+            if (p.stock > 0) {
+                cmbItems.addItem(p.name + " (Stock: " + p.stock + ")");
+            } else {
+                cmbItems.addItem(p.name + " (OUT OF STOCK)");
+            }
+        }
+    }
+
+    private void openAdminInventoryManager() {
+        String[] productNames = inventory.stream().map(p -> p.name).toArray(String[]::new);
+        JComboBox<String> cmbSelectProduct = new JComboBox<>(productNames);
+        JTextField txtEditPrice = new JTextField();
+        JTextField txtEditStock = new JTextField();
+
+        cmbSelectProduct.addActionListener(e -> {
+            int idx = cmbSelectProduct.getSelectedIndex();
+            if (idx >= 0) {
+                txtEditPrice.setText(String.valueOf(inventory.get(idx).price));
+                txtEditStock.setText(String.valueOf(inventory.get(idx).stock));
+            }
+        });
+        if (productNames.length > 0) cmbSelectProduct.setSelectedIndex(0);
+
+        Object[] message = {
+            "Select Product to Edit:", cmbSelectProduct,
+            "Edit Price ($):", txtEditPrice,
+            "Edit Stock (Units):", txtEditStock
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message, "Admin Inventory Edit Panel", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                int selectedIdx = cmbSelectProduct.getSelectedIndex();
+                double newPrice = Double.parseDouble(txtEditPrice.getText().trim());
+                int newStock = Integer.parseInt(txtEditStock.getText().trim());
+
+                if (newPrice <= 0 || newStock < 0) {
+                    JOptionPane.showMessageDialog(this, "Price/Stock must be valid non-negative values!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Product prod = inventory.get(selectedIdx);
+                prod.price = newPrice;
+                prod.stock = newStock;
+
+                populateComboBox();
+                JOptionPane.showMessageDialog(this, "Product updated successfully!", "Admin Success", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid Price or Stock number entered!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void addItemToCart() {
@@ -264,28 +725,41 @@ class BillingSystemForm extends JFrame {
                 return;
             }
 
-            String itemName = (String) cmbItems.getSelectedItem();
-            double price = Double.parseDouble(txtPrice.getText().trim());
+            Product prod = inventory.get(selectedIndex - 1);
+
+            if (prod.stock <= 0) {
+                JOptionPane.showMessageDialog(this, "Sorry! This item is OUT OF STOCK.", "Stock Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            double price = prod.price;
             int qty = Integer.parseInt(txtQuantity.getText().trim());
 
-            if (price <= 0 || qty <= 0) {
-                JOptionPane.showMessageDialog(this, "Price and Quantity must be greater than zero.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            if (qty <= 0) {
+                JOptionPane.showMessageDialog(this, "Quantity must be greater than zero.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (qty > prod.stock) {
+                JOptionPane.showMessageDialog(this, "Only " + prod.stock + " units available in stock!", "Stock Limit Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             double itemTotal = price * qty;
 
-            tableModel.addRow(new Object[]{itemName, String.format("%.2f", price), qty, String.format("%.2f", itemTotal)});
+            tableModel.addRow(new Object[]{prod.name, String.format("%.2f", price), qty, String.format("%.2f", itemTotal)});
+
+            prod.stock -= qty;
 
             subTotal += itemTotal;
             updateTotals();
 
-            cmbItems.setSelectedIndex(0);
+            populateComboBox();
             txtPrice.setText("");
             txtQuantity.setText("");
 
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Please enter valid numeric values for Price and Quantity.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please enter a valid numeric value for Quantity.", "Input Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -303,6 +777,7 @@ class BillingSystemForm extends JFrame {
         tableModel.setRowCount(0);
         subTotal = 0.0;
         chkDiscount.setSelected(false);
+        txtComment.setText("");
         updateTotals();
         cmbItems.setSelectedIndex(0);
         txtPrice.setText("");
